@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 export default function UpdateArticleForm() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     title: '',
     content: '',
@@ -9,13 +13,23 @@ export default function UpdateArticleForm() {
     categoryId: '',
   });
 
+  const [loading, setLoading] = useState(true);
 
-  // Fetch to prefill a form and update an existing article
   useEffect(() => {
-    axios.put(`http://localhost:5000/articles/${id}`, updatedata)
-    .then(response => setForm(response.data))
-    .catch(err => console.error('Error fetching article:', err));
-  }, []);
+    const fetchArticle = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/articles/${id}`);
+        console.log('Fetched article:', res.data);
+        setForm(res.data.article || res.data); // Adjust if wrapped
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch article:', err);
+        alert('Error loading article data');
+        setLoading(false);
+      }
+    };
+    fetchArticle();
+  }, [id]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -23,16 +37,17 @@ export default function UpdateArticleForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Update article with axios
     try {
       await axios.put(`http://localhost:5000/articles/${id}`, form);
       alert('Article updated successfully!');
-      // Optionally redirect or reset form
-    } catch (error) {
-      console.error('Error updating article:', error);
-      alert('Failed to update article. Please try again.');
+      navigate('/');
+    } catch (err) {
+      console.error('Failed to update article:', err);
+      alert('Error updating article');
     }
   };
+
+  if (loading) return <div>Loading article data...</div>;
 
   return (
     <form onSubmit={handleSubmit}>
